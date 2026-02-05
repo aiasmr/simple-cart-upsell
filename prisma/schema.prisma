@@ -40,6 +40,11 @@ model Shop {
   currentPlan   Plan          @default(FREE)
   billingStatus BillingStatus @default(ACTIVE)
   chargeId      String? // Shopify recurring charge ID
+
+  // Free shipping progress bar settings
+  freeShippingEnabled   Boolean @default(false)
+  freeShippingThreshold Decimal @default(50.00) @db.Decimal(10, 2) // Default $50
+
   installedAt   DateTime      @default(now())
   uninstalledAt DateTime?
 

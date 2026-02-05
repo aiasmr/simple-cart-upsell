@@ -62,6 +62,54 @@
     }
   }
 
+  // Fetch free shipping settings
+  async function fetchShippingSettings() {
+    if (!SHOP_DOMAIN) return { enabled: false, threshold: 0 };
+
+    const params = new URLSearchParams({
+      shop: SHOP_DOMAIN
+    });
+
+    try {
+      // Use different paths depending on whether we're using proxy or direct URL
+      const endpoint = configuredUrl ? '/api/storefront/shipping' : '/shipping';
+      const response = await fetch(`${API_BASE}${endpoint}?${params}`);
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('Failed to fetch shipping settings:', err);
+      return { enabled: false, threshold: 0 };
+    }
+  }
+
+  // Update free shipping progress bar
+  function updateShippingProgress(cartTotal, threshold) {
+    const barElement = document.getElementById('free-shipping-bar');
+    const messageElement = document.getElementById('free-shipping-message');
+    const progressElement = document.getElementById('free-shipping-progress');
+
+    if (!barElement || !messageElement || !progressElement) return;
+
+    const remaining = threshold - cartTotal;
+    const progress = Math.min((cartTotal / threshold) * 100, 100);
+
+    if (remaining > 0) {
+      // Not yet reached threshold
+      const remainingFormatted = formatMoney(remaining * 100);
+      messageElement.textContent = `Add ${remainingFormatted} more for free shipping!`;
+      messageElement.classList.remove('success');
+      progressElement.classList.remove('complete');
+    } else {
+      // Threshold reached!
+      messageElement.textContent = '🎉 You\'ve unlocked free shipping!';
+      messageElement.classList.add('success');
+      progressElement.classList.add('complete');
+    }
+
+    progressElement.style.width = `${progress}%`;
+    barElement.classList.add('active');
+  }
+
   // Fetch upsell offers
   async function fetchUpsells(productIds, cartToken) {
     if (!productIds.length || !SHOP_DOMAIN) return [];
@@ -220,6 +268,14 @@
     const cart = await getCart();
     const productIds = cart.items.map(item => item.product_id.toString());
     const cartToken = getCookie('cart');
+
+    // Fetch and update free shipping progress
+    const shippingSettings = await fetchShippingSettings();
+    if (shippingSettings.enabled && shippingSettings.threshold > 0) {
+      // Cart total is in cents, convert to dollars
+      const cartTotal = cart.total_price / 100;
+      updateShippingProgress(cartTotal, shippingSettings.threshold);
+    }
 
     if (!productIds.length) {
       containers.forEach(container => {

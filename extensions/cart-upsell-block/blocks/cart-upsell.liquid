@@ -4,6 +4,14 @@
 {% endcomment %}
 
 <div class="cart-upsell-block" data-cart-upsell>
+  <!-- Free Shipping Progress Bar -->
+  <div class="free-shipping-bar" id="free-shipping-bar">
+    <div class="free-shipping-bar__message" id="free-shipping-message"></div>
+    <div class="free-shipping-bar__progress-container">
+      <div class="free-shipping-bar__progress" id="free-shipping-progress"></div>
+    </div>
+  </div>
+
   <style>
     .cart-upsell-block {
       padding: 1.5rem;
@@ -240,6 +248,54 @@
       width: 80px;
       height: 80px;
       flex-shrink: 0;
+    }
+
+    /* Free Shipping Progress Bar */
+    .free-shipping-bar {
+      display: none;
+      background: white;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .free-shipping-bar.active {
+      display: block;
+    }
+
+    .free-shipping-bar__message {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      text-align: center;
+      color: #333;
+    }
+
+    .free-shipping-bar__message.success {
+      color: #4caf50;
+    }
+
+    .free-shipping-bar__progress-container {
+      width: 100%;
+      height: 10px;
+      background: #e0e0e0;
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .free-shipping-bar__progress {
+      height: 100%;
+      background: linear-gradient(90deg, #2196f3 0%, #4caf50 100%);
+      border-radius: 5px;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    .free-shipping-bar__progress.complete {
+      background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
     }
   </style>
 
