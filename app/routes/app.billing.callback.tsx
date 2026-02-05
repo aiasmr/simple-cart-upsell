@@ -2,7 +2,8 @@ import type { LoaderFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { authenticate } from "../shopify.server";
 import { prisma } from "../db.server";
-import { getCurrentSubscription, getCurrentPlan } from "../billing.server";
+import { getCurrentPlan } from "../billing";
+import { getCurrentSubscription } from "../billing.server";
 
 /**
  * Billing Callback

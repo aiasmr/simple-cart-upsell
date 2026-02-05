@@ -4,13 +4,11 @@ import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import type { HeadersFunction } from "react-router";
 import { prisma } from "../db.server";
+import { BILLING_PLANS, getCurrentPlan, hasActivePaidSubscription } from "../billing";
 import {
-  BILLING_PLANS,
   createBillingSubscription,
   getCurrentSubscription,
   cancelSubscription,
-  getCurrentPlan,
-  hasActivePaidSubscription,
 } from "../billing.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -34,6 +32,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get current subscription from Shopify
   const subscription = await getCurrentSubscription(admin);
   const currentPlan = getCurrentPlan(subscription);
+  const hasActiveSub = hasActivePaidSubscription(subscription);
 
   return {
     shop: {
@@ -41,6 +40,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       activeRulesCount: shopRecord.rules.length,
     },
     subscription,
+    hasActiveSub,
     plans: BILLING_PLANS,
   };
 };
@@ -91,7 +91,7 @@ export default function Billing() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const currentPlan = data.shop.plan;
-  const hasActiveSub = hasActivePaidSubscription(data.subscription);
+  const hasActiveSub = data.hasActiveSub;
 
   return (
     <s-page heading="Billing">
