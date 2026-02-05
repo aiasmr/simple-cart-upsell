@@ -82,7 +82,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
             },
             body: JSON.stringify({
               query: `
-                query getProductCollections($id: ID!) {
+                query getProductCollections {
                   product(id: "gid://shopify/Product/${productId}") {
                     collections(first: 250) {
                       edges {
@@ -94,9 +94,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
                   }
                 }
               `,
-              variables: {
-                id: `gid://shopify/Product/${productId}`,
-              },
             }),
           }
         );
