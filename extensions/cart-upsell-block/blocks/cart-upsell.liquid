@@ -92,6 +92,72 @@
       background: #999;
       cursor: not-allowed;
     }
+
+    /* Compact mode for cart drawers */
+    @media (max-width: 749px), (max-width: 400px) {
+      .cart-upsell__list {
+        grid-template-columns: 1fr;
+      }
+
+      .cart-upsell__item {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .cart-upsell__image {
+        width: 80px;
+        height: 80px;
+        flex-shrink: 0;
+      }
+
+      .cart-upsell__details {
+        flex: 1;
+        padding: 0.5rem;
+      }
+
+      .cart-upsell__title {
+        font-size: 0.9rem;
+      }
+
+      .cart-upsell__price {
+        font-size: 1rem;
+        margin: 0.25rem 0;
+      }
+
+      .cart-upsell__add-btn {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+      }
+    }
+
+    /* Detect if inside drawer/aside */
+    aside .cart-upsell-block,
+    .drawer .cart-upsell-block,
+    [id*="drawer"] .cart-upsell-block {
+      margin: 0.5rem 0;
+      padding: 1rem;
+    }
+
+    aside .cart-upsell__list,
+    .drawer .cart-upsell__list,
+    [id*="drawer"] .cart-upsell__list {
+      grid-template-columns: 1fr;
+    }
+
+    aside .cart-upsell__item,
+    .drawer .cart-upsell__item,
+    [id*="drawer"] .cart-upsell__item {
+      display: flex;
+      flex-direction: row;
+    }
+
+    aside .cart-upsell__image,
+    .drawer .cart-upsell__image,
+    [id*="drawer"] .cart-upsell__image {
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+    }
   </style>
 
   {% if block.settings.heading != blank %}
@@ -120,6 +186,10 @@
 {
   "name": "Cart Upsell",
   "target": "section",
+  "enabled_on": {
+    "templates": ["cart"],
+    "groups": ["aside"]
+  },
   "settings": [
     {
       "type": "text",
