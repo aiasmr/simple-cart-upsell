@@ -34,6 +34,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         },
       },
     });
+  } else {
+    // Update access token on each login to keep it fresh
+    shopRecord = await prisma.shop.update({
+      where: { id: shopRecord.id },
+      data: { accessToken: session.accessToken },
+      include: {
+        rules: {
+          where: { isEnabled: true },
+        },
+      },
+    });
   }
 
   // Get analytics for last 7 days
