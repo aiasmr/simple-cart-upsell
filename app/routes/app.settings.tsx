@@ -6,7 +6,7 @@ import type { HeadersFunction } from "react-router";
 import { prisma } from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
 
   const shopRecord = await prisma.shop.findUnique({
@@ -21,16 +21,33 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw new Error("Shop not found");
   }
 
+  // Fetch store currency from Shopify
+  let currency = "USD";
+  try {
+    const response = await admin.graphql(`
+      query {
+        shop {
+          currencyCode
+        }
+      }
+    `);
+    const data = await response.json();
+    currency = data?.data?.shop?.currencyCode || "USD";
+  } catch (error) {
+    console.error("Failed to fetch currency:", error);
+  }
+
   return {
     settings: {
       freeShippingEnabled: shopRecord.freeShippingEnabled,
       freeShippingThreshold: shopRecord.freeShippingThreshold.toString(),
     },
+    currency,
   };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
 
   const formData = await request.formData();
@@ -46,12 +63,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       };
     }
 
+    // Fetch and save currency code
+    let currencyCode = "USD";
+    try {
+      const response = await admin.graphql(`
+        query {
+          shop {
+            currencyCode
+          }
+        }
+      `);
+      const data = await response.json();
+      currencyCode = data?.data?.shop?.currencyCode || "USD";
+    } catch (error) {
+      console.error("Failed to fetch currency:", error);
+    }
+
     // Update shop settings
     await prisma.shop.update({
       where: { shopifyDomain: shop },
       data: {
         freeShippingEnabled,
         freeShippingThreshold,
+        currencyCode,
       },
     });
 
@@ -71,6 +105,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Settings() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+
+  // Currency symbol map
+  const currencySymbols: Record<string, string> = {
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    CAD: "CA$",
+    AUD: "A$",
+    JPY: "¥",
+    CNY: "¥",
+    INR: "₹",
+  };
+
+  const currencySymbol = currencySymbols[data.currency] || data.currency;
 
   return (
     <s-page heading="Settings">
@@ -101,17 +149,20 @@ export default function Settings() {
               <s-divider />
 
               <s-stack direction="block" gap="base">
-                <s-checkbox
-                  name="freeShippingEnabled"
-                  defaultChecked={data.settings.freeShippingEnabled}
-                >
-                  Enable free shipping progress bar
-                </s-checkbox>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="freeShippingEnabled"
+                    defaultChecked={data.settings.freeShippingEnabled}
+                    style={{ marginRight: '8px' }}
+                  />
+                  <s-text weight="semibold">Enable free shipping progress bar</s-text>
+                </label>
 
                 <s-stack direction="block" gap="tight">
-                  <s-text weight="semibold">Free Shipping Threshold</s-text>
+                  <s-text weight="semibold">Free Shipping Threshold ({data.currency})</s-text>
                   <s-text appearance="subdued" size="small">
-                    The minimum cart value needed for free shipping (in your store's currency)
+                    The minimum cart value needed for free shipping
                   </s-text>
                   <s-text-field
                     name="freeShippingThreshold"
@@ -119,14 +170,14 @@ export default function Settings() {
                     step="0.01"
                     min="0"
                     defaultValue={data.settings.freeShippingThreshold}
-                    prefix="$"
+                    prefix={currencySymbol}
                   />
                 </s-stack>
 
                 <s-banner status="info">
                   <s-stack direction="block" gap="tight">
                     <s-text weight="semibold">Example Messages:</s-text>
-                    <s-text>• "Add $15.00 more for free shipping!" (when below threshold)</s-text>
+                    <s-text>• "Add {currencySymbol}15.00 more for free shipping!" (when below threshold)</s-text>
                     <s-text>• "🎉 You've unlocked free shipping!" (when threshold reached)</s-text>
                   </s-stack>
                 </s-banner>
@@ -134,7 +185,7 @@ export default function Settings() {
 
               <s-divider />
 
-              <s-button submit variant="primary">
+              <s-button type="submit" variant="primary">
                 Save Settings
               </s-button>
             </s-stack>

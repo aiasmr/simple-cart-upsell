@@ -82,8 +82,25 @@
     }
   }
 
+  // Format money with currency
+  function formatMoneyWithCurrency(amount, currency) {
+    const currencySymbols = {
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'CAD': 'CA$',
+      'AUD': 'A$',
+      'JPY': '¥',
+      'CNY': '¥',
+      'INR': '₹'
+    };
+
+    const symbol = currencySymbols[currency] || currency;
+    return `${symbol}${amount.toFixed(2)}`;
+  }
+
   // Update free shipping progress bar
-  function updateShippingProgress(cartTotal, threshold) {
+  function updateShippingProgress(cartTotal, threshold, currency) {
     const barElement = document.getElementById('free-shipping-bar');
     const messageElement = document.getElementById('free-shipping-message');
     const progressElement = document.getElementById('free-shipping-progress');
@@ -95,7 +112,7 @@
 
     if (remaining > 0) {
       // Not yet reached threshold
-      const remainingFormatted = formatMoney(remaining * 100);
+      const remainingFormatted = formatMoneyWithCurrency(remaining, currency || 'USD');
       messageElement.textContent = `Add ${remainingFormatted} more for free shipping!`;
       messageElement.classList.remove('success');
       progressElement.classList.remove('complete');
@@ -274,7 +291,7 @@
     if (shippingSettings.enabled && shippingSettings.threshold > 0) {
       // Cart total is in cents, convert to dollars
       const cartTotal = cart.total_price / 100;
-      updateShippingProgress(cartTotal, shippingSettings.threshold);
+      updateShippingProgress(cartTotal, shippingSettings.threshold, shippingSettings.currency);
     }
 
     if (!productIds.length) {

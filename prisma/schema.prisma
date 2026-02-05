@@ -44,6 +44,7 @@ model Shop {
   // Free shipping progress bar settings
   freeShippingEnabled   Boolean @default(false)
   freeShippingThreshold Decimal @default(50.00) @db.Decimal(10, 2) // Default $50
+  currencyCode          String  @default("USD") // Store currency code
 
   installedAt   DateTime      @default(now())
   uninstalledAt DateTime?

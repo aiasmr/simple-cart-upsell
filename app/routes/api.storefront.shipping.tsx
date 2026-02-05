@@ -32,6 +32,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       select: {
         freeShippingEnabled: true,
         freeShippingThreshold: true,
+        currencyCode: true,
       },
     });
 
@@ -40,6 +41,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         {
           enabled: false,
           threshold: 0,
+          currency: "USD",
         },
         { headers: { "Access-Control-Allow-Origin": "*" } }
       );
@@ -50,6 +52,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       {
         enabled: shopRecord.freeShippingEnabled,
         threshold: parseFloat(shopRecord.freeShippingThreshold.toString()),
+        currency: shopRecord.currencyCode,
       },
       {
         headers: {
