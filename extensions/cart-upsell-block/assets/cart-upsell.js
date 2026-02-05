@@ -99,34 +99,6 @@
     return `${symbol}${amount.toFixed(2)}`;
   }
 
-  // Update free shipping progress bar
-  function updateShippingProgress(cartTotal, threshold, currency) {
-    const barElement = document.getElementById('free-shipping-bar');
-    const messageElement = document.getElementById('free-shipping-message');
-    const progressElement = document.getElementById('free-shipping-progress');
-
-    if (!barElement || !messageElement || !progressElement) return;
-
-    const remaining = threshold - cartTotal;
-    const progress = Math.min((cartTotal / threshold) * 100, 100);
-
-    if (remaining > 0) {
-      // Not yet reached threshold
-      const remainingFormatted = formatMoneyWithCurrency(remaining, currency || 'USD');
-      messageElement.textContent = `Add ${remainingFormatted} more for free shipping!`;
-      messageElement.classList.remove('success');
-      progressElement.classList.remove('complete');
-    } else {
-      // Threshold reached!
-      messageElement.textContent = '🎉 You\'ve unlocked free shipping!';
-      messageElement.classList.add('success');
-      progressElement.classList.add('complete');
-    }
-
-    progressElement.style.width = `${progress}%`;
-    barElement.classList.add('active');
-  }
-
   // Fetch upsell offers
   async function fetchUpsells(productIds, cartToken) {
     if (!productIds.length || !SHOP_DOMAIN) return [];
@@ -277,10 +249,116 @@
     });
   }
 
+  // Detect if we're in a cart drawer context
+  function isInCartDrawer() {
+    // Check common cart drawer selectors used by Shopify themes
+    const drawerSelectors = [
+      'cart-drawer',
+      '.cart-drawer',
+      '#cart-drawer',
+      '#CartDrawer',
+      '.drawer--cart',
+      '[id*="drawer"]',
+      '[class*="drawer"]',
+      'aside[aria-label*="cart" i]',
+      'aside[role="dialog"]',
+      '.mini-cart',
+      '#mini-cart'
+    ];
+
+    for (const selector of drawerSelectors) {
+      const element = document.querySelector(selector);
+      if (element) {
+        // Check if our script is running inside this element
+        const scriptTag = document.currentScript || document.querySelector('script[src*="cart-upsell.js"]');
+        if (scriptTag && element.contains(scriptTag)) {
+          return element;
+        }
+        // Or check if there's a cart form inside
+        if (element.querySelector('form[action="/cart"]')) {
+          return element;
+        }
+      }
+    }
+    return null;
+  }
+
+  // Inject free shipping bar into cart drawer
+  function injectShippingBarIntoDrawer(drawer) {
+    // Check if bar already exists in drawer
+    if (drawer.querySelector('#free-shipping-bar')) return;
+
+    // Create the shipping bar HTML
+    const shippingBarHTML = `
+      <div class="free-shipping-bar" id="free-shipping-bar-drawer" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 1.25rem; margin: 1rem 0; border: none; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+        <div class="free-shipping-bar__message" id="free-shipping-message-drawer" style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; text-align: center; color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);"></div>
+        <div class="free-shipping-bar__progress-container" style="width: 100%; height: 12px; background: rgba(255, 255, 255, 0.3); border-radius: 20px; overflow: hidden; position: relative; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);">
+          <div class="free-shipping-bar__progress" id="free-shipping-progress-drawer" style="height: 100%; background: linear-gradient(90deg, #ffffff 0%, #f0f0f0 100%); border-radius: 20px; transition: width 0.5s ease; width: 0%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);"></div>
+        </div>
+      </div>
+    `;
+
+    // Find the best place to inject it (top of cart items or drawer header)
+    const cartForm = drawer.querySelector('form[action="/cart"]');
+    const cartItems = drawer.querySelector('.cart-items, .cart__items, [class*="items"]');
+    const drawerHeader = drawer.querySelector('.drawer__header, .cart-drawer__header, header');
+
+    if (cartItems) {
+      // Insert before cart items
+      cartItems.insertAdjacentHTML('beforebegin', shippingBarHTML);
+    } else if (cartForm) {
+      // Insert at top of cart form
+      cartForm.insertAdjacentHTML('afterbegin', shippingBarHTML);
+    } else if (drawerHeader) {
+      // Insert after header
+      drawerHeader.insertAdjacentHTML('afterend', shippingBarHTML);
+    } else {
+      // Insert at top of drawer as fallback
+      drawer.insertAdjacentHTML('afterbegin', shippingBarHTML);
+    }
+  }
+
+  // Update shipping progress (works for both page and drawer)
+  function updateShippingProgressBar(cartTotal, threshold, currency, isDrawer = false) {
+    const suffix = isDrawer ? '-drawer' : '';
+    const barElement = document.getElementById(`free-shipping-bar${suffix}`);
+    const messageElement = document.getElementById(`free-shipping-message${suffix}`);
+    const progressElement = document.getElementById(`free-shipping-progress${suffix}`);
+
+    if (!barElement || !messageElement || !progressElement) return;
+
+    const remaining = threshold - cartTotal;
+    const progress = Math.min((cartTotal / threshold) * 100, 100);
+
+    if (remaining > 0) {
+      // Not yet reached threshold
+      const remainingFormatted = formatMoneyWithCurrency(remaining, currency || 'USD');
+      messageElement.textContent = `Add ${remainingFormatted} more for free shipping!`;
+      messageElement.classList.remove('success');
+      progressElement.classList.remove('complete');
+    } else {
+      // Threshold reached!
+      messageElement.textContent = '🎉 You\'ve unlocked free shipping!';
+      messageElement.classList.add('success');
+      progressElement.classList.add('complete');
+      // Update progress element style for complete state
+      progressElement.style.background = 'linear-gradient(90deg, #4caf50 0%, #66bb6a 100%)';
+      progressElement.style.boxShadow = '0 0 12px rgba(76, 175, 80, 0.5)';
+    }
+
+    progressElement.style.width = `${progress}%`;
+    barElement.style.display = 'block';
+  }
+
   // Initialize upsells
   async function initUpsells() {
     const containers = document.querySelectorAll('[data-cart-upsell]');
-    if (!containers.length) return;
+    const drawer = isInCartDrawer();
+
+    // If we're in a drawer, inject the shipping bar
+    if (drawer) {
+      injectShippingBarIntoDrawer(drawer);
+    }
 
     const cart = await getCart();
     const productIds = cart.items.map(item => item.product_id.toString());
@@ -291,8 +369,15 @@
     if (shippingSettings.enabled && shippingSettings.threshold > 0) {
       // Cart total is in cents, convert to dollars
       const cartTotal = cart.total_price / 100;
-      updateShippingProgress(cartTotal, shippingSettings.threshold, shippingSettings.currency);
+
+      // Update both page and drawer if they exist
+      updateShippingProgressBar(cartTotal, shippingSettings.threshold, shippingSettings.currency, false);
+      if (drawer) {
+        updateShippingProgressBar(cartTotal, shippingSettings.threshold, shippingSettings.currency, true);
+      }
     }
+
+    if (!containers.length) return;
 
     if (!productIds.length) {
       containers.forEach(container => {
@@ -308,6 +393,45 @@
     });
   }
 
+  // Watch for cart drawer being added to DOM
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.addedNodes.length) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === 1) { // Element node
+            // Check if the added node or its children contain a cart drawer
+            const drawerSelectors = [
+              'cart-drawer',
+              '.cart-drawer',
+              '#cart-drawer',
+              '#CartDrawer',
+              '.drawer--cart',
+              '.mini-cart',
+              '#mini-cart'
+            ];
+
+            for (const selector of drawerSelectors) {
+              if (node.matches && node.matches(selector)) {
+                setTimeout(initUpsells, 100); // Small delay to ensure drawer is fully rendered
+                return;
+              }
+              if (node.querySelector && node.querySelector(selector)) {
+                setTimeout(initUpsells, 100);
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Start observing the document for cart drawer additions
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
   // Run on page load
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initUpsells);
@@ -315,6 +439,12 @@
     initUpsells();
   }
 
-  // Re-run when cart updates
+  // Re-run when cart updates (handle various cart event types)
   document.addEventListener('cart:updated', initUpsells);
+  document.addEventListener('cart:refresh', initUpsells);
+  document.addEventListener('cart:change', initUpsells);
+
+  // Listen for drawer open events
+  document.addEventListener('drawer:open', initUpsells);
+  document.addEventListener('cart-drawer:open', initUpsells);
 })();
