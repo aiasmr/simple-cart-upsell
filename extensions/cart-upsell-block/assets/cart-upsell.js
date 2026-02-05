@@ -126,6 +126,12 @@
       : `$${amount}`;
   }
 
+  // Calculate discount percentage
+  function getDiscountPercent(price, compareAtPrice) {
+    if (!compareAtPrice || compareAtPrice <= price) return null;
+    return Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
+  }
+
   // Render offers
   function renderOffers(offers, container) {
     if (!offers.length) {
@@ -136,8 +142,17 @@
 
     container.style.display = 'block';
 
-    const offersHTML = offers.map(offer => `
+    const offersHTML = offers.map(offer => {
+      const discountPercent = getDiscountPercent(
+        offer.product.price,
+        offer.product.compareAtPrice
+      );
+
+      const hasSale = discountPercent && discountPercent > 0;
+
+      return `
       <div class="cart-upsell__item" data-rule-id="${offer.ruleId}">
+        ${hasSale ? `<span class="cart-upsell__badge cart-upsell__badge--sale">${discountPercent}% OFF</span>` : ''}
         <div class="cart-upsell__image">
           ${offer.product.image
             ? `<img src="${offer.product.image}" alt="${offer.product.title}" loading="lazy">`
@@ -146,7 +161,10 @@
         </div>
         <div class="cart-upsell__details">
           <h4 class="cart-upsell__title">${offer.product.title}</h4>
-          <p class="cart-upsell__price">${formatMoney(offer.product.price)}</p>
+          <div class="cart-upsell__price ${hasSale ? 'cart-upsell__price--sale' : ''}">
+            ${hasSale ? `<span class="cart-upsell__compare-price">${formatMoney(offer.product.compareAtPrice)}</span>` : ''}
+            <span>${formatMoney(offer.product.price)}</span>
+          </div>
           <button
             class="cart-upsell__add-btn"
             data-variant-id="${offer.product.variantId}"
@@ -156,7 +174,8 @@
           </button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     const listContainer = container.querySelector('.cart-upsell__list');
     if (listContainer) {

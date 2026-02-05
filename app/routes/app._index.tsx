@@ -148,9 +148,10 @@ export default function Index() {
             <s-button href="/app/rules/new" variant="primary">
               Create New Rule
             </s-button>
-            {shop.plan === "PRO" && (
-              <s-button href="/app/analytics">View Analytics</s-button>
-            )}
+            <s-button href="/app/analytics">View Analytics</s-button>
+            <s-button href="/app/billing">
+              {shop.plan === "FREE" ? "Upgrade to Pro" : "Manage Billing"}
+            </s-button>
           </s-stack>
         </s-stack>
       </s-section>

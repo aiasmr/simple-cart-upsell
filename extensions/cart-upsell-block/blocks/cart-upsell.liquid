@@ -18,12 +18,29 @@
       font-size: 1.25rem;
       font-weight: 600;
       color: #1a1a1a;
+      text-align: center;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #2196f3;
+      display: inline-block;
+      width: 100%;
     }
 
     .cart-upsell__list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 1rem;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .cart-upsell__item {
@@ -31,6 +48,14 @@
       border-radius: 8px;
       overflow: hidden;
       border: 1px solid #e0e0e0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .cart-upsell__item:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
     }
 
     .cart-upsell__image {
@@ -70,6 +95,42 @@
       font-size: 1.1rem;
       color: #333;
       font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .cart-upsell__price--sale {
+      color: #d32f2f;
+    }
+
+    .cart-upsell__compare-price {
+      font-size: 0.9rem;
+      color: #999;
+      text-decoration: line-through;
+      font-weight: 400;
+    }
+
+    .cart-upsell__badge {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      z-index: 1;
+    }
+
+    .cart-upsell__badge--sale {
+      background: #d32f2f;
+      color: white;
+    }
+
+    .cart-upsell__badge--popular {
+      background: #ff9800;
+      color: white;
     }
 
     .cart-upsell__add-btn {
@@ -82,15 +143,26 @@
       cursor: pointer;
       font-size: 0.95rem;
       font-weight: 500;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .cart-upsell__add-btn:hover {
-      background: #333;
+      background: #2196f3;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    }
+
+    .cart-upsell__add-btn:active {
+      transform: translateY(0);
     }
 
     .cart-upsell__add-btn:disabled {
       background: #999;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
 
     /* Compact mode for cart drawers */
@@ -127,6 +199,17 @@
       .cart-upsell__add-btn {
         padding: 0.5rem;
         font-size: 0.85rem;
+      }
+
+      .cart-upsell__badge {
+        top: 0.25rem;
+        right: 0.25rem;
+        padding: 0.2rem 0.4rem;
+        font-size: 0.65rem;
+      }
+
+      .cart-upsell__item:hover {
+        transform: none;
       }
     }
 
@@ -186,10 +269,7 @@
 {
   "name": "Cart Upsell",
   "target": "section",
-  "enabled_on": {
-    "templates": ["cart"],
-    "groups": ["aside"]
-  },
+  "templates": ["cart"],
   "settings": [
     {
       "type": "text",

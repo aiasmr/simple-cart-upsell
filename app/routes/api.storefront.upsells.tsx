@@ -117,13 +117,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Match rules based on cart contents
     const matchedRules = [];
 
-    console.log('[DEBUG] Found rules:', rules.length);
-    console.log('[DEBUG] Cart product IDs:', cartProductIds);
-
     for (const rule of rules) {
       let matches = false;
-
-      console.log('[DEBUG] Checking rule:', rule.name, 'Type:', rule.triggerType);
 
       if (rule.triggerType === "PRODUCT") {
         // Check if trigger product is in cart
