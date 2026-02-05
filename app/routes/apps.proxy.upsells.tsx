@@ -65,6 +65,46 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return match ? match[1] : null;
     };
 
+    // Helper to fetch product collections from Shopify
+    const getProductCollections = async (productId: string): Promise<string[]> => {
+      try {
+        const response = await fetch(
+          `https://${shop}/admin/api/2024-01/graphql.json`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Shopify-Access-Token': shopRecord.accessToken,
+            },
+            body: JSON.stringify({
+              query: `
+                query getProductCollections($id: ID!) {
+                  product(id: "gid://shopify/Product/${productId}") {
+                    collections(first: 250) {
+                      edges {
+                        node {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                id: `gid://shopify/Product/${productId}`,
+              },
+            }),
+          }
+        );
+
+        const data = await response.json();
+        return data?.data?.product?.collections?.edges.map((edge: any) => edge.node.id) || [];
+      } catch (error) {
+        console.error('Error fetching product collections:', error);
+        return [];
+      }
+    };
+
     // Match rules based on cart contents
     const matchedRules = [];
 
@@ -77,8 +117,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
           matches = true;
         }
       } else if (rule.triggerType === "COLLECTION") {
-        // Skip collection triggers for MVP
-        continue;
+        // Check if any cart product belongs to the trigger collection
+        for (const productId of cartProductIds) {
+          const productCollections = await getProductCollections(productId);
+          if (productCollections.includes(rule.triggerCollectionId || '')) {
+            matches = true;
+            break;
+          }
+        }
       }
 
       if (matches) {
