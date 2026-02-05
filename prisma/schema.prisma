@@ -1,0 +1,134 @@
+// This is your Prisma schema file for Simple Cart Upsell
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Shopify session model (required by Shopify App)
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// Stores the Shopify shop information
+model Shop {
+  id            String        @id @default(cuid())
+  shopifyDomain String        @unique // e.g., "my-store.myshopify.com"
+  accessToken   String // Encrypted OAuth token
+  isActive      Boolean       @default(true)
+  currentPlan   Plan          @default(FREE)
+  billingStatus BillingStatus @default(ACTIVE)
+  chargeId      String? // Shopify recurring charge ID
+  installedAt   DateTime      @default(now())
+  uninstalledAt DateTime?
+
+  rules     Rule[]
+  analytics AnalyticsEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopifyDomain])
+}
+
+// Upsell rules created by merchants
+model Rule {
+  id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  name      String // Internal name for merchant reference
+  isEnabled Boolean @default(true)
+
+  // Trigger configuration
+  triggerType         TriggerType // PRODUCT or COLLECTION
+  triggerProductId    String? // Shopify product GID if type is PRODUCT
+  triggerCollectionId String? // Shopify collection GID if type is COLLECTION
+  triggerProductData  Json? // {title, image, price} - cached trigger product data
+
+  // Upsell product
+  upsellProductId String // Shopify product GID to show as upsell
+  upsellVariantId String? // Optional: specific variant, else use default
+
+  // Cached product data (refreshed daily)
+  upsellProductData Json? // {title, image, price, compareAtPrice}
+
+  priority Int @default(0) // Lower number = higher priority
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  analytics AnalyticsEvent[]
+
+  @@index([shopId, isEnabled])
+  @@index([triggerProductId])
+  @@index([triggerCollectionId])
+}
+
+// Analytics events for tracking performance
+model AnalyticsEvent {
+  id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  ruleId String
+  rule   Rule   @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  eventType EventType // IMPRESSION or CONVERSION
+  cartToken String? // Anonymous cart identifier
+
+  // Session data (for de-duplication)
+  sessionId String?
+
+  // Revenue tracking (for conversions)
+  productPrice Decimal? @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([shopId, ruleId, createdAt])
+  @@index([cartToken])
+}
+
+// Enums
+enum Plan {
+  FREE
+  STARTER
+  PRO
+}
+
+enum BillingStatus {
+  ACTIVE
+  CANCELLED
+  TRIAL
+  PAST_DUE
+}
+
+enum TriggerType {
+  PRODUCT
+  COLLECTION
+}
+
+enum EventType {
+  IMPRESSION // Upsell was shown
+  CONVERSION // Upsell was added to cart
+}

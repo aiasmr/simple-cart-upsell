@@ -1,0 +1,163 @@
+{% comment %}
+  Simple Cart Upsell - App Block
+  Displays product recommendations in cart
+{% endcomment %}
+
+<div class="cart-upsell-block" data-cart-upsell>
+  <style>
+    .cart-upsell-block {
+      padding: 1.5rem;
+      margin: 1rem 0;
+      background-color: #f7f7f7;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .cart-upsell-block__heading {
+      margin: 0 0 1rem 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .cart-upsell__list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .cart-upsell__item {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+    }
+
+    .cart-upsell__image {
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+    }
+
+    .cart-upsell__image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cart-upsell__no-image {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
+      color: #999;
+    }
+
+    .cart-upsell__details {
+      padding: 1rem;
+    }
+
+    .cart-upsell__title {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .cart-upsell__price {
+      margin: 0 0 1rem 0;
+      font-size: 1.1rem;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .cart-upsell__add-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .cart-upsell__add-btn:hover {
+      background: #333;
+    }
+
+    .cart-upsell__add-btn:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+  </style>
+
+  {% if block.settings.heading != blank %}
+    <h3 class="cart-upsell-block__heading">
+      {{ block.settings.heading }}
+    </h3>
+  {% endif %}
+
+  <div class="cart-upsell__list">
+    {% comment %} JavaScript will populate offers here {% endcomment %}
+  </div>
+
+  {% comment %} Hidden data attributes for JavaScript {% endcomment %}
+  <div
+    id="cart-upsell-data"
+    data-shop="{{ shop.permanent_domain }}"
+    data-cart-token="{{ cart.token }}"
+    data-api-url="{{ block.settings.api_url }}"
+    style="display: none;"
+  ></div>
+</div>
+
+{{ 'cart-upsell.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Cart Upsell",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "api_url",
+      "label": "App API URL (for development)",
+      "info": "Leave empty for production. For dev: http://localhost:58825",
+      "placeholder": "http://localhost:58825"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "You might also like",
+      "info": "Heading text shown above upsell offers"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_on_cart_page",
+      "label": "Show on cart page",
+      "default": true,
+      "info": "Display upsells on the main cart page"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_in_cart_drawer",
+      "label": "Show in cart drawer",
+      "default": true,
+      "info": "Display upsells in the cart drawer/popup"
+    },
+    {
+      "type": "range",
+      "id": "max_offers",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "label": "Maximum offers to show",
+      "default": 3
+    }
+  ]
+}
+{% endschema %}

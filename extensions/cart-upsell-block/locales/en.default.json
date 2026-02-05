@@ -1,0 +1,24 @@
+{
+  "cart_upsell": {
+    "name": "Cart Upsell",
+    "heading": {
+      "label": "Heading",
+      "info": "Heading text shown above upsell offers"
+    },
+    "show_on_cart_page": {
+      "label": "Show on cart page",
+      "info": "Display upsells on the main cart page"
+    },
+    "show_in_cart_drawer": {
+      "label": "Show in cart drawer",
+      "info": "Display upsells in the cart drawer/popup"
+    },
+    "max_offers": {
+      "label": "Maximum offers to show"
+    },
+    "placeholder": {
+      "title": "Upsell offers will appear here",
+      "description": "Configure your upsell rules in the app admin"
+    }
+  }
+}
