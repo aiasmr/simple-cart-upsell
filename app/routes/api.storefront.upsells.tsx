@@ -39,6 +39,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   // Parse product IDs from cart
   const cartProductIds = productsParam.split(",").map(id => id.trim()).filter(Boolean);
 
+  console.log('[API] Shop:', shop);
+  console.log('[API] Cart Product IDs:', cartProductIds);
+
   if (cartProductIds.length === 0) {
     return Response.json(
       { offers: [] },
@@ -80,6 +83,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Helper to fetch product collections from Shopify
     const getProductCollections = async (productId: string): Promise<string[]> => {
       try {
+        console.log('[GraphQL] Fetching collections for product:', productId);
         const response = await fetch(
           `https://${shop}/admin/api/2024-01/graphql.json`,
           {
@@ -110,6 +114,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
         );
 
         const data = await response.json();
+        console.log('[GraphQL] Response data:', JSON.stringify(data, null, 2));
+
+        if (data.errors) {
+          console.error('[GraphQL] Errors:', data.errors);
+        }
+
         return data?.data?.product?.collections?.edges.map((edge: any) => edge.node.id) || [];
       } catch (error) {
         console.error('Error fetching product collections:', error);
@@ -131,11 +141,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
         }
       } else if (rule.triggerType === "COLLECTION") {
         // Check if any cart product belongs to the trigger collection
+        console.log('[Collection Debug] Checking rule:', rule.name);
+        console.log('[Collection Debug] Trigger collection ID:', rule.triggerCollectionId);
+
         for (const productId of cartProductIds) {
+          console.log('[Collection Debug] Checking product:', productId);
           const productCollections = await getProductCollections(productId);
+          console.log('[Collection Debug] Product collections:', productCollections);
+
           if (productCollections.includes(rule.triggerCollectionId || '')) {
+            console.log('[Collection Debug] MATCH FOUND!');
             matches = true;
             break;
+          } else {
+            console.log('[Collection Debug] No match for this product');
           }
         }
       }
